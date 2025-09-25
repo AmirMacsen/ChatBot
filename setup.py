@@ -4,10 +4,9 @@ import signal
 import sys
 from contextlib import asynccontextmanager
 
-import uvicorn
 from fastapi import FastAPI
 
-from server.api_server.server_app import create_app
+from configs.fastchat import FSCHAT_MODEL_WORKERS
 
 
 def _set_app_event(app: FastAPI, started_event: mp.Event = None):
@@ -19,87 +18,86 @@ def _set_app_event(app: FastAPI, started_event: mp.Event = None):
 
     app.lifespan_context = lifespan
 
-def start_api_server(started_event: mp.Event = None,):
-    app = create_app()
-    _set_app_event(app, started_event)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-def start_web_server(started_event: mp.Event = None,):
-    app = create_app()
-    _set_app_event(app, started_event)
-    uvicorn.run(app, host="0.0.0.0", port=8001)
 
 async def start_main_server():
-    def handler(signal_name):
-        def f(signal_received, frame):
-            raise KeyboardInterrupt(f"{signal_name} received")
-        return f
+    # 创建关闭事件
+    shutdown_event = asyncio.Event()
 
-    # 接收信号，触发handler函数
-    signal.signal(signal.SIGINT, handler("SIGINT"))
-    signal.signal(signal.SIGTERM, handler("SIGTERM"))
+    def signal_handler(signum, frame):
+        signal_name = signal.Signals(signum).name
+        print(f"\nReceived {signal_name} signal. Initiating graceful shutdown...")
+        shutdown_event.set()
 
-    # 设置多进程创建的方式， 默认是 fork， 这里改为 spawn
-    # fork方式：创建子进程时，操作系统完全复制当前父进程的地址空间，子进程从父进程fork之后的代码开始执行
-    # spawn方式：创建子进程时，创建一个全新的地址空间，仅仅继承一些环境变量之类的参数
-    mp.set_start_method('spawn')
-    # 创建一个进程管理器
-    manager = mp.Manager()
+    # 注册信号处理器
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-    processes = dict()
+    processes={}
 
-    # api服务事件监听
-    api_started = manager.Event()
-    process = mp.Process(
-        target=start_api_server,
-        name="API Server",
-        kwargs={
-            "started_event": api_started,
-        },
-        daemon=False
-
-    )
-
-    processes["api"] = process
-
-
-    # web服务事件监听
-    web_started = manager.Event()
-    process = mp.Process(
-        target=start_web_server,
-        name="Web Server",
-        kwargs={
-            "started_event": web_started,
-        },
-        daemon=False
-    )
-    processes["web"] = process
     try:
-        ## 启动服务
-        if p:=processes.get("api"):
-            p.start()
-            p.name = f"{p.name} ({p.pid})"
-            # 等待服务启动
-            api_started.wait(timeout=10) 
+        # 启动API服务器
+        from multiprocessing import Process, Manager
+        manager = Manager()
 
-        if p:=processes.get("web"):
-            p.start()
-            p.name = f"{p.name} ({p.pid})"
-            web_started.wait(timeout=10)
+        # 启动controller服务
+        controller_started = manager.Event()
+        from core.controller import run_controller
+        controller_process = Process(target=run_controller,kwargs={"log_level": "INFO",
+                                                                   "started_event": controller_started})
+        controller_process.start()
+        processes["controller"] = controller_process
 
-        # 等待所有进程都退出
-        for p in processes.values():
-            p.join()
+        # 等待controller启动
+        await asyncio.get_event_loop().run_in_executor(None, controller_started.wait, 10)
 
-            if not p.is_alive():
-                processes.pop(p.name)
+
+
+        # 启动model_worker
+        from core.model_worker import run_model_worker
+        for model_name, config in FSCHAT_MODEL_WORKERS.items():
+            model_worker_started = manager.Event()
+            model_worker_process = Process(target=run_model_worker,
+                                           kwargs={"model_name": model_name,
+                                                   "log_level": "INFO",
+                                                   "queue": None,
+                                                   "started_event": model_worker_started})
+            model_worker_process.start()
+            await asyncio.get_event_loop().run_in_executor(None, model_worker_started.wait, 10)
+            processes[model_name] = model_worker_process
+
+
+        # 启动openai_api
+        from core.openai_api import run_openai_api
+        openai_api_started = manager.Event()
+        openai_api_process = Process(target=run_openai_api,
+                                     kwargs={"log_level": "INFO",
+                                             "started_event": openai_api_started})
+        openai_api_process.start()
+        processes["openai_api"] = openai_api_process
+        await asyncio.get_event_loop().run_in_executor(None, openai_api_started.wait, 10)
+
+        print("Server is running. Press Ctrl+C to stop.")
+
+        # 等待关闭信号
+        await shutdown_event.wait()
+
+        print("Shutting down...")
+
+        # 优雅关闭API进程
+        for process in processes.values():
+            process.terminate()
+            process.join(timeout=5)
+            if process.is_alive():
+                process.kill()
+                process.join()
+
+        print("Server stopped gracefully.")
+
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-    finally:
-        for p in processes.values():
-            if p.is_alive():
-                p.terminate()
+        print(f"Error occurred: {e}")
+        return 1
+
+    return 0
 
 
 def main():
