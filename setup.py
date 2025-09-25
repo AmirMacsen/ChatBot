@@ -96,7 +96,6 @@ async def start_main_server():
     except Exception as e:
         print(f"Error occurred: {e}")
         return 1
-
     return 0
 
 
