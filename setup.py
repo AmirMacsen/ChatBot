@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from configs.fastchat import FSCHAT_MODEL_WORKERS
+from core.api import run_app
 
 
 def _set_app_event(app: FastAPI, started_event: mp.Event = None):
@@ -75,6 +76,18 @@ async def start_main_server():
         openai_api_process.start()
         processes["openai_api"] = openai_api_process
         await asyncio.get_event_loop().run_in_executor(None, openai_api_started.wait, 10)
+
+
+        # 启动api服务
+        from core.api import create_app
+        api_started = manager.Event()
+        api_process = Process(target=run_app,
+                             kwargs={"started_event": api_started,
+                                     "run_mode": "main"})
+        api_process.start()
+        processes["api"] = api_process
+        await asyncio.get_event_loop().run_in_executor(None, api_started.wait, 10)
+
 
         print("Server is running. Press Ctrl+C to stop.")
 
