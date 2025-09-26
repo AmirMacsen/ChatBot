@@ -29,10 +29,33 @@ FSCHAT_MODEL_WORKERS: Dict = {
         "max_gpu_memory": "22GiB",
         "online_api": False,
         "worker_class": None
-    }
+    },
+    # "chatglm3-6b": {
+    #     "host": "localhost",
+    #     "port": 21003,
+    #     "model_path": os.path.join(PROJECT_ROOT, "models/chatglm3-6b"),
+    #     "device": "cuda",
+    #     "num_gpus": 1,
+    #     "max_gpu_memory": "22GiB",
+    #     "online_api": False,
+    #     "worker_class": None
+    # },
+    # "Qwen3-4B": {
+    #     "host": "localhost",
+    #     "port": 21003,
+    #     "model_path": os.path.join(PROJECT_ROOT, "models/Qwen3-4B"),
+    #     "device": "cuda",
+    #     "num_gpus": 1,
+    #     "max_gpu_memory": "22GiB",
+    #     "online_api": False,
+    #     "load_in_8bit": True,
+    #     "worker_class": None,
+    #     "trust_remote_code": True
+    # }
+
 }
 
-# Chatchat原生服务配置
+# 原生服务配置
 API_SERVER: Dict = {
     "host": "localhost",
     "port": 7861

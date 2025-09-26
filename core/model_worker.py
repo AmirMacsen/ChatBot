@@ -116,9 +116,11 @@ def run_model_worker(
 
     # 启动UVicorn服务
     config = FSCHAT_MODEL_WORKERS[model_name]
+    print(f"Starting model worker for {model_name}...")
     uvicorn.run(
         app,
         host=config["host"],
         port=config["port"],
         log_level=log_level.lower()
     )
+    print(f"Model worker for {model_name} stopped.")

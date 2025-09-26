@@ -3,11 +3,13 @@ import multiprocessing as mp
 import signal
 import sys
 from contextlib import asynccontextmanager
+from importlib import reload
 
 from fastapi import FastAPI
 
 from configs.fastchat import FSCHAT_MODEL_WORKERS
 from core.api import run_app
+from core import open_ai_api_server
 
 
 def _set_app_event(app: FastAPI, started_event: mp.Event = None):
@@ -23,6 +25,9 @@ def _set_app_event(app: FastAPI, started_event: mp.Event = None):
 async def start_main_server():
     # 创建关闭事件
     shutdown_event = asyncio.Event()
+
+    # 重载模块,修改pydantic的问题
+    sys.modules["fastchat.server.openai_api_server"] = reload(open_ai_api_server)
 
     def signal_handler(signum, frame):
         signal_name = signal.Signals(signum).name
@@ -57,10 +62,12 @@ async def start_main_server():
         from core.model_worker import run_model_worker
         for model_name, config in FSCHAT_MODEL_WORKERS.items():
             model_worker_started = manager.Event()
+            # 创建队列用于模型管理
+            model_queue = manager.Queue()
             model_worker_process = Process(target=run_model_worker,
                                            kwargs={"model_name": model_name,
                                                    "log_level": "INFO",
-                                                   "queue": None,
+                                                   "queue": model_queue,
                                                    "started_event": model_worker_started})
             model_worker_process.start()
             await asyncio.get_event_loop().run_in_executor(None, model_worker_started.wait, 10)

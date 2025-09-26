@@ -2,6 +2,9 @@ import multiprocessing as mp
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from chat.chat import chat
+from configs.basic import VERSION
+
 
 def create_app(run_mode: str = None):
     app = FastAPI(
@@ -34,7 +37,6 @@ def mount_app_routes(app: FastAPI, run_mode: str = None):
              summary="与llm模型对话(通过LLMChain)",
              )(chat)
 
-
 def run_app(started_event: mp.Event, run_mode: str = None):
     """
     启动服务
@@ -43,6 +45,9 @@ def run_app(started_event: mp.Event, run_mode: str = None):
     """
     import uvicorn
     from configs.fastchat import API_SERVER
+    from utils.http import set_httpx_config
+
+    set_httpx_config()
     app = create_app(run_mode=run_mode)
     started_event.set()  # 标记服务启动完成
     uvicorn.run(
