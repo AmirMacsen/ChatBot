@@ -47,20 +47,11 @@ async def chat(query: str = Body(..., description="用户输入", examples=["恼
             prompt = get_prompt_template("llm_chat", prompt_name)
             # 创建PromptTemplate对象
             prompt_template = PromptTemplate.from_template(prompt)
-            print(f"PromptTemplate对象: {prompt_template}")
-            print(f"PromptTemplate变量: {prompt_template.input_variables}")
-            # 测试模板渲染
-            try:
-                rendered_prompt = prompt_template.format(input=query)
-                print(f"渲染后的模板: {rendered_prompt}")
-            except Exception as e:
-                print(f"模板渲染错误: {str(e)}")
             # 使用PromptTemplate对象创建LLMChain
             llm_chain = LLMChain(
                 llm=model,
                 prompt=prompt_template,
             )
-            print(f"query:{query}")
             if stream:
                 # 流式模式
                 acall_task = asyncio.create_task(wrap_done(
@@ -73,10 +64,11 @@ async def chat(query: str = Body(..., description="用户输入", examples=["恼
             else:
                 # 非流式模式
                 result = await llm_chain.acall({"input": query})
-                print(f"answer: {result}")
                 answer = result.get("text", "")
                 yield json.dumps({"text": answer, "message_id": message_id}, ensure_ascii=False)
-
+        except asyncio.CancelledError:
+            if acall_task:
+                acall_task.cancel()
         except Exception as e:
             import traceback
             print(traceback.format_exc())

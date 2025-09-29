@@ -30,9 +30,19 @@ FSCHAT_MODEL_WORKERS: Dict = {
         "online_api": False,
         "worker_class": None
     },
-    # "chatglm3-6b": {
+    # "bge-large-zh-v1.5": {
     #     "host": "localhost",
     #     "port": 21003,
+    #     "model_path": os.path.join(PROJECT_ROOT, "models/bge-large-zh-v1.5"),
+    #     "device": "cuda",
+    #     "num_gpus": 1,
+    #     "max_gpu_memory": "22GiB",
+    #     "online_api": False,
+    #     "worker_class": None
+    # },
+    # "chatglm3-6b": {
+    #     "host": "localhost",
+    #     "port": 21004,
     #     "model_path": os.path.join(PROJECT_ROOT, "models/chatglm3-6b"),
     #     "device": "cuda",
     #     "num_gpus": 1,

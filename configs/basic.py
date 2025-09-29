@@ -15,7 +15,7 @@ LOG_VERBOSE = True
 LOG_LEVEL = "INFO"  # 默认为INFO，quiet模式下改为ERROR
 
 # 模型配置
-LLM_MODELS: List[str] = ["DeepSeek-R1-Distill-Qwen-1.5B"]  # 默认LLM模型
+LLM_MODELS: List[str] = ["DeepSeek-R1-Distill-Qwen-1.5B", "bge-large-zh-v1.5"]  # 默认LLM模型
 EMBEDDING_MODEL = "m3e-base"
 TEXT_SPLITTER_NAME = "RecursiveCharacterTextSplitter"
 
