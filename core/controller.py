@@ -2,19 +2,21 @@
 import sys
 
 from fastapi import FastAPI, Body
-from fastchat.serve.controller import app as base_app, Controller
 from utils.http import get_httpx_client
 from configs.basic import LOG_PATH
-import fastchat.constants
 import multiprocessing as mp
 
-fastchat.constants.LOGDIR = LOG_PATH  # 全局日志目录配置
 
 
 def create_controller_app(dispatch_method: str, log_level: str) -> FastAPI:
     """创建Controller服务实例"""
     # 初始化Controller核心逻辑
+    import fastchat.constants
+    fastchat.constants.LOGDIR = LOG_PATH
+    from fastchat.serve.controller import app as base_app, Controller, logger
+    logger.setLevel(log_level)
     controller = Controller(dispatch_method)
+
     # 挂载Controller实例到APP
     sys.modules["fastchat.serve.controller"].controller = controller # 挂载Controller到APP
     base_app._controller = controller

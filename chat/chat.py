@@ -9,7 +9,7 @@ from langchain_core.prompts import PromptTemplate
 from sse_starlette.sse import EventSourceResponse
 
 from callback_handler.conversation_callback_handler import ConversationCallbackHandler
-from chat.utils import History, get_chat_model, get_prompt_template, wrap_done
+from chat.chat_utils import History, get_chat_model, get_prompt_template, wrap_done
 from configs.basic import LLM_MODELS
 from configs.model import TEMPERATURE
 from db.repository.message_repository import add_message_to_db

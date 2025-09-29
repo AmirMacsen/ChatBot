@@ -1,7 +1,7 @@
 PROMPT_TEMPLATES = {
     "llm_chat": {
         "default":
-            '你是一个智能助手，请回答以下问题：\n'
+            '你是一个智能助手，直接回答用户的问题。\n'
             'Question: {input}\n'
             'Answer:',
 

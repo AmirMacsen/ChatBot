@@ -27,7 +27,7 @@ async def start_main_server():
     shutdown_event = asyncio.Event()
 
     # 重载模块,修改pydantic的问题
-    sys.modules["fastchat.server.openai_api_server"] = reload(open_ai_api_server)
+    # sys.modules["fastchat.server.openai_api_server"] = reload(open_ai_api_server)
 
     def signal_handler(signum, frame):
         signal_name = signal.Signals(signum).name
@@ -95,6 +95,16 @@ async def start_main_server():
         processes["api"] = api_process
         await asyncio.get_event_loop().run_in_executor(None, api_started.wait, 10)
 
+
+        # 启动webui
+        from core.webui import run_webui
+        webui_started = manager.Event()
+        webui_process = Process(target=run_webui,
+                                kwargs={"started_event": webui_started,
+                                        "run_mode": "lite"})
+        webui_process.start()
+        processes["webui"] = webui_process
+        await asyncio.get_event_loop().run_in_executor(None, webui_started.wait, 10)
 
         print("Server is running. Press Ctrl+C to stop.")
 

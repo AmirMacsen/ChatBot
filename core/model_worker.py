@@ -1,11 +1,10 @@
 # Model Worker服务：仅负责创建Worker的FastAPI实例
 from fastapi import FastAPI, Body
-from configs.fastchat import FSCHAT_MODEL_WORKERS, get_controller_addr, get_model_worker_addr
+
 from configs.basic import LOG_PATH
-import fastchat.constants
+from configs.fastchat import FSCHAT_MODEL_WORKERS, get_controller_addr, get_model_worker_addr
 import multiprocessing as mp
 
-fastchat.constants.LOGDIR = LOG_PATH
 
 def create_model_worker_app(model_name: str, log_level: str, queue: mp.Queue) -> FastAPI:
     """创建Model Worker服务实例（支持本地模型/在线API）"""
@@ -16,6 +15,11 @@ def create_model_worker_app(model_name: str, log_level: str, queue: mp.Queue) ->
         "worker_address": get_model_worker_addr(model_name),
         **config  # 合并模型专属配置
     }
+
+    import fastchat.constants
+    fastchat.constants.LOGDIR = LOG_PATH
+    from fastchat.serve.model_worker import logger
+    logger.setLevel(log_level)
 
     # 1. 在线API Worker（如智谱）
     if config["online_api"] and config["worker_class"]:

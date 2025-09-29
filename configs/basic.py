@@ -24,7 +24,7 @@ LLM_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 EMBEDDING_DEVICE = LLM_DEVICE
 
 # 网络超时
-HTTPX_DEFAULT_TIMEOUT = 30
+HTTPX_DEFAULT_TIMEOUT = 300
 
 # 项目版本
 VERSION = "0.2.1"

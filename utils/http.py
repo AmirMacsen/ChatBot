@@ -2,13 +2,15 @@
 from typing import Union, Dict
 
 import httpx
+from httpx import AsyncClient
+
 from configs.basic import HTTPX_DEFAULT_TIMEOUT
 from configs.fastchat import get_controller_addr, get_model_worker_addr, get_api_server_addr, get_openai_api_addr, get_webui_addr
 
 
-def get_httpx_client() -> httpx.Client:
+def get_httpx_client() -> AsyncClient:
     """获取统一配置的HTTP客户端"""
-    return httpx.Client(
+    return httpx.AsyncClient(
         timeout=HTTPX_DEFAULT_TIMEOUT,
         follow_redirects=True
     )

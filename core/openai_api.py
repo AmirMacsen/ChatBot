@@ -3,7 +3,6 @@ import sys
 from fastapi import FastAPI, Body
 
 from configs.fastchat import get_controller_addr, FSCHAT_OPENAI_API
-from utils.http import get_httpx_client
 from configs.basic import LOG_PATH
 import fastchat.constants
 import multiprocessing as mp

@@ -2,6 +2,7 @@ import multiprocessing as mp
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.llm_api import list_running_models
 from chat.chat import chat
 from configs.basic import VERSION
 
@@ -36,6 +37,14 @@ def mount_app_routes(app: FastAPI, run_mode: str = None):
              tags=["Chat"],
              summary="与llm模型对话(通过LLMChain)",
              )(chat)
+
+    # Tag: LLM Model Management
+    app.post("/llm_model/list_running_models",
+             tags=["LLM Model Management"],
+             summary="列出当前已加载的模型",
+             )(list_running_models)
+
+
 
 def run_app(started_event: mp.Event, run_mode: str = None):
     """
